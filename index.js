@@ -82,14 +82,65 @@ const viewEmployees = () => {
     ON role.department_id = department.id
     LEFT JOIN employee manager
     ON manager.id = employee.manager_id
-  `, (err, data) => {
+  `, (err, employees) => {
     if (err) { console.log(err) }
-    console.table(data)
+    console.table(employees)
+    mainMenu()
   })
 }
 
 const addEmployee = () => {
+  db.query('SELECT * FROM role', (err, roles) => {
+    if (err) { console.log(err) }
 
+    roles = roles.map(role => ({
+      name: role.title,
+      value: role.id
+    }))
+
+    db.query('SELECT * FROM employee', (err, employees) => {
+
+      employees = employees.map(employee => ({
+        name: `${employee.first_name} ${employee.last_name}`,
+        value: employee.id
+      }))
+      
+      employees.unshift({ name: 'None', value: null })
+
+      prompt([
+        {
+          type: 'input',
+          name: 'first_name',
+          message: 'What is the employee first name?'
+        },
+        {
+          type: 'input',
+          name: 'last_name',
+          message: 'What is the employee last name?'
+        },
+        {
+          type: 'list',
+          name: 'role_id',
+          message: 'Choose a role for the employee:',
+          choices: roles
+        },
+        {
+          type: 'list',
+          name: 'manager_id',
+          message: 'Choose a manager for the employee:',
+          choices: employees
+        }
+      ])
+        .then(employee => {
+          db.query('INSERT INTO employee SET ?', employee, (err) => {
+            if (err) { console.log(err) }
+            console.log('Employee Created!')
+            mainMenu()
+          })
+        })
+        .catch(err => console.log(err))
+    })
+  })
 }
 
 const updateEmployeeRole = () => {
